@@ -103,29 +103,28 @@ rsfm <- function(data, formula, family,
 
   priors <- append_list(list(prior_prec = c(0.5, 0.05)), priors)
   prior_prec <- priors$prior_prec
-
-  f_fixed <- format(formula)
-
-  ##-- INLA
+  #print(formula)
+  f_fixed <- paste(deparse(formula), collapse = " ")
+  #print(f_fixed)
+  # INLA
   if(approach == "inla") {
     if(!is.null(area)) {
-      f_random <- sprintf("f(%s,
-                             model = '%s',
-                             graph = %s,
-                             hyper = list(prec = list(prior = 'loggamma',
-                                                      param = c(%s, %s))))",
-                          area, model, "W", prior_prec[1], prior_prec[2])
-      f_pred <- paste(f_fixed, f_random, sep = " + ")
-    } else{
+      f_random <- sprintf("f(%s, model = '%s', graph = %s, hyper = list(prec = list(prior = 'loggamma', param = c(%s, %s))))", area, model, "W", prior_prec[1], prior_prec[2])
+      
+      # Remover o '+' extra e espaços em branco antes de adicionar os termos aleatórios
+      f_fixed_trimmed <- sub("\\s*\\+\\s*$", "", f_fixed)
+      
+      f_pred <- paste(f_fixed_trimmed, f_random, sep = " + ")
+    } else {
       f_pred <- f_fixed
     }
-
+    
     formula <- gsub(x = f_pred, pattern = "^surv\\(", replacement = "INLA::inla.surv(")
-    formula <- paste(formula, collapse = " ")
     formula <- as.formula(formula)
-
+   # print(formula)
     out <- rsfm_inla(data = data, formula = formula, family, proj = proj, fast = fast, nsamp = nsamp, ...)
   }
+  
 
   ##-- BUGS
   if(approach == "mcmc") {
